@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Example of shbca configuration file. This can be used to store
+# Username, password, IP and other configuration needed.
+#
+
+# Klik BCA Username
+BCA_LOGIN_USERNAME=""
+
+# Klik BCA Password
+BCA_LOGIN_PASSWORD=""
+
+# Klik BCA Origin IP
+# Leave empty to get default public ip address from wtfismyip.com/text
+BCA_LOGIN_IP=
+
+##################################################################
+NO NEED TO EDIT BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING
+##################################################################
+
+# Cookie File
+#BCA_COOKIE_FILE="./shbca.cookie"
+
+# Output directory
+#BCA_OUTPUT_DIR="./tmp"
+
+# Log file
+#BCA_LOG_FILE="shbca.log"
+
+# Base URL of mobile Klik BCA (no trailing slash)
+#BCA_BASE_URL="https://m.klikbca.com"
+
+# Show HTTP Response headers
+#BCA_CURL_SHOW_HEADERS="yes"
+
+# Timeout of curl process in seconds
+#BCA_CURL_TIMEOUT=120
+
+# Silent the curl process
+#BCA_CURL_SILENT="yes"
