@@ -73,9 +73,11 @@ bca_see_help()
 # Function to get IP address using service from wtfismyip.com
 bca_get_ip()
 {
+    [ ! -z "$BCA_LOGIN_IP" ] && return 0
+
     bca_log "Getting ip from http://wtfismyip.com/text"
     local SERVICE_URL='http://wtfismyip.com/text'
-    echo $( curl $SERVICE_URLs )
+    BCA_LOGIN_IP=$( curl -s $SERVICE_URL | sed $'s/\r$//' )
 }
 
 # Function to output syslog like output
@@ -169,6 +171,7 @@ bca_validate_login()
 # Function to login to BCA account and store the cookie
 bca_do_login()
 {
+    bca_get_ip
     bca_validate_login
 
     # Get the IP address from default service if empty
