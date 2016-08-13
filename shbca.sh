@@ -9,7 +9,7 @@
 readonly BCA_SCRIPT_NAME=$(basename $0)
 
 # AWS style versioning
-BCA_VERSION="2016-07-30"
+BCA_VERSION="2016-08-14"
 BCA_CONFIG_FILE=""
 
 # Flag for debugging
@@ -43,12 +43,13 @@ bca_help()
 Usage: $0 [OPTIONS]
 
 Where OPTIONS:
-  -a ACTION     specify action name using ACTION.
+  -a ACTION     specify action name using ACTION
   -c FILE       read config file from FILE
+  -h            print this help and exit
   -i IP         specify IP address using IP. Default value will parse from
                 http://wtfismyip.com/text
   -p PASSWD     specify klik BCA password using PASSWD
-  -r            dry run mode. Print the curl command.
+  -r            dry run mode. Print the curl command
   -u USER       specify klik BCA username using USER
   -v            print the shgrate version
 
@@ -277,7 +278,7 @@ bca_check_balance()
 }
 
 # Parse the arguments
-while getopts a:c:i:p:ru:v BCA_OPT;
+while getopts a:c:hi:p:ru:v BCA_OPT;
 do
     case $BCA_OPT in
         a)
@@ -286,6 +287,11 @@ do
 
         c)
             BCA_CONFIG_FILE="$OPTARG"
+        ;;
+
+        h)
+            bca_help
+            exit 0
         ;;
 
         i)
