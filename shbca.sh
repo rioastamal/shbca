@@ -56,6 +56,7 @@ List of available ACTION:
   - login
   - logout
   - check_balance
+  - check_balance_auto_login
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
@@ -137,23 +138,10 @@ bca_build_request()
     echo $REQUEST
 }
 
-# Function to visit bca main page to get the cookie
-bca_visit_login()
-{
-    bca_log "Visiting BCA login URL $BCA_BASE_URL/login.jsp"
-    eval "curl $( bca_build_request GET) $BCA_BASE_URL/login.jsp > ${BCA_OUTPUT_DIR}/output_visit_home.html" && {
-        bca_log "Saving the output of home visit to ${BCA_OUTPUT_DIR}/curl-get.login.jsp"
-        return 0
-    }
-
-    bca_err "Failed to fetch BCA login page"
-    return 1
-}
-
 # Function to check whether log in was successul
 bca_is_login_ok()
 {
-    cat - | grep 'accountstmt.do?value(actions)=menu' && return 0
+    cat - | grep 'accountstmt.do?value(actions)=menu' >/dev/null && return 0
 
     return 1
 }
@@ -186,7 +174,7 @@ bca_do_login()
     [ -z "$BCA_LOGIN_IP" ] && BCA_LOGIN_IP=$( bca_get_ip )
 
     local LOGIN_LOG="Logging in to $BCA_BASE_URL/authentication.do with data"
-    LOGIN_LOG="$LOGIN_LOG username: $BCA_LOGIN_USERNAME, password: $BCA_LOGIN_PASSWORD "
+    LOGIN_LOG="$LOGIN_LOG username: $BCA_LOGIN_USERNAME, password: ****** "
     LOGIN_LOG="$LOGIN_LOG ip address: $BCA_LOGIN_IP"
 
     local LOGIN_DATA="--data 'value(user_id)=$BCA_LOGIN_USERNAME'"
@@ -201,17 +189,19 @@ bca_do_login()
     local LOGIN_HEADER="-H \"Referer: $BCA_BASE_URL/login.jsp\""
     local OUTFILE=$BCA_OUTPUT_DIR/curl-post.authentication.do.html
     local CMD="curl $( bca_build_request POST ) $LOGIN_DATA $LOGIN_HEADER $BCA_BASE_URL/authentication.do > $OUTFILE"
+    local CMD_LOG="$( echo "$CMD" | sed "s/$BCA_LOGIN_PASSWORD/*****/g;s/$BCA_LOGIN_USERNAME/******/g" )"
 
     bca_log "$LOGIN_LOG"
-    bca_log "Executing command -> $CMD"
+    bca_log "Executing command -> $CMD_LOG"
 
     [ "$BCA_DRY_DRUN" = "yes" ] && { echo "$CMD"; return 0; }
 
     eval "$CMD" && {
         bca_log "Saving login output to $OUTFILE"
 
-        cat "$OUTFILE" | bca_is_login_ok >/dev/null && {
+        cat "$OUTFILE" | bca_is_login_ok && {
             bca_log "successully login to Klik BCA as $BCA_LOGIN_USERNAME"
+            echo "Logged in to Klik BCA"
             return 0
         }
     }
@@ -226,18 +216,17 @@ bca_do_logout()
     bca_log "Logging out by visiting URL $BCA_BASE_URL/authentication.do?value(actions)=logout"
 
     local OUTFILE=$BCA_OUTPUT_DIR/curl-get.authentication.do.logout.html
-    local CMD="curl -i -s $( bca_build_request ) '$BCA_BASE_URL/authentication.do?value(actions)=logout' > $OUTFILE"
+    local LOGOUT_HEADER="-H \"Referer: $BCA_BASE_URL/authentication.do\""
+    local CMD="curl -i -s $( bca_build_request ) $LOGOUT_HEADER '$BCA_BASE_URL/authentication.do?value(actions)=logout' > $OUTFILE"
     bca_log "Executing command -> $CMD"
 
     [ "$BCA_DRY_DRUN" = "yes" ] && { echo "$CMD"; return 0; }
 
     eval "$CMD" && {
         bca_log "Saving logout output to $OUTFILE"
-
-        cat "$OUTFILE" | grep "Location: $BCA_BASE_URL/login.jsp" && {
-            bca_log "successully logout from Klik BCA"
-            return 0
-        }
+        bca_log "successully logout from Klik BCA"
+        echo "Logged out from Klik BCA"
+        return 0
     }
 
     bca_err "Failed to log out from Klik BCA"
@@ -247,7 +236,44 @@ bca_do_logout()
 # Function to check BCA account balance
 bca_check_balance()
 {
-    bca_visit_home
+    bca_log "Checking balance by visiting URL $BCA_BASE_URL/balanceinquiry.do"
+
+    local OUTFILE=$BCA_OUTPUT_DIR/curl-get.balanceinquiry.do.html
+    local BALANCE_HEADER="-H \"Referer: $BCA_BASE_URL/authentication.do?value(actions)=menu\""
+    local CMD="curl -i -s $( bca_build_request POST ) $BALANCE_HEADER '$BCA_BASE_URL/balanceinquiry.do' > $OUTFILE"
+    bca_log "Executing command -> $CMD"
+
+    [ "$BCA_DRY_DRUN" = "yes" ] && { echo "$CMD"; return 0; }
+
+    eval "$CMD" && {
+        bca_log "Saving balance output to $OUTFILE"
+
+        # Check for the redirection
+        grep "HTTP/1.1 302 Moved Temporarily" "$OUTFILE" > /dev/null && {
+            bca_err "Failed to parse balance, you may need to login."
+            return 1
+        }
+
+        # Row before the marker is the account number
+        # Row after the marker is the balance
+        local TMP_BALANCE_INFO=$( grep -A 1 -B 1 "color='#0000a7'><b>IDR</td>" "$OUTFILE" )
+        bca_log "Result of grep: $TMP_BALANCE_INFO"
+
+        # The last sed is for removing the carriege return \r
+        # http://stackoverflow.com/questions/21621722/removing-carriage-return-on-mac-os-x-using-sed
+
+        # The beginning .* is to match the whole line so it is not included in backreference subtitution
+        # http://stackoverflow.com/questions/17511639/sed-print-only-matching-group
+        local ACCOUNT_NUMBER=$( echo "$TMP_BALANCE_INFO" | head -n 1 | sed "s@.*<td><font size='1' color='#0000a7'><b>\(.*\)</td>@\1@" | sed $'s/\r$//' )
+        local BALANCE_LEFT=$( echo "$TMP_BALANCE_INFO" | tail -n 1 | sed "s@.*<td align='right'><font size='1' color='#0000a7'><b>\(.*\)</td>@\1@" | sed $'s/\r$//' )
+        echo "Account number: $ACCOUNT_NUMBER. Balance left: $BALANCE_LEFT"
+
+        bca_log "Balance successully parsed -> Account number: $ACCOUNT_NUMBER | Balance: $BALANCE_LEFT"
+        return 0
+    }
+
+    bca_err "Failed to parse balance from Klik BCA"
+    return 1
 }
 
 # Parse the arguments
@@ -303,7 +329,13 @@ case $BCA_ACTION in
     ;;
 
     check_balance)
-        bca_check_balances
+        bca_check_balance
+    ;;
+
+    check_balance_wlogin)
+        bca_do_login
+        bca_check_balance
+        bca_do_logout
     ;;
 
     *)
