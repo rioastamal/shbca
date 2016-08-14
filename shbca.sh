@@ -48,7 +48,7 @@ Where OPTIONS:
   -h            print this help and exit
   -i IP         specify IP address using IP. Default value will parse from
                 http://wtfismyip.com/text
-  -p PASSWD     specify klik BCA password using PASSWD
+  -p            specify klik BCA password. It will prompt an input.
   -r            dry run mode. Print the curl command
   -u USER       specify klik BCA username using USER
   -v            print the shbca version
@@ -281,7 +281,7 @@ bca_check_balance()
 }
 
 # Parse the arguments
-while getopts a:c:hi:p:ru:v BCA_OPT;
+while getopts a:c:hi:pru:v BCA_OPT;
 do
     case $BCA_OPT in
         a)
@@ -302,7 +302,8 @@ do
         ;;
 
         p)
-            BCA_LOGIN_PASSWORD="$OPTARG"
+            read -s -p "Enter Klik BCA Password: " BCA_LOGIN_PASSWORD
+            echo ""
         ;;
 
         r)
