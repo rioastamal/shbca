@@ -57,7 +57,7 @@ List of available ACTION:
   - login
   - logout
   - check_balance
-  - check_balance_auto_login
+  - check_balance_wlogin
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
