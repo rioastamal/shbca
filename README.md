@@ -10,7 +10,7 @@ shbca advertise itself as iPhone device while connecting to Klik BCA.
 
 ## Requirements
 
-shbca require Bash (tested with Bash 3.2.57 on Mac OS X El Capital) and other shell utilities:
+shbca require Bash (tested with Bash 3.2.57 on Mac OS X El Capitan) and other shell utilities:
 
 * cat
 * curl
