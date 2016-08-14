@@ -165,7 +165,7 @@ That's why shbca never log those information in clear text in the log file.
 shbca automatically replace it with asterisk characters `******`.
 
 If you are using config file for storing your Klik BCA username and password,
-make sure only that can read the file. Change the permission to very minimal
+make sure only you that can read the file. Change the permission to very minimal
 such as `0600`. Assuming the name of the config file is `shbca.config`.
 
 ```
