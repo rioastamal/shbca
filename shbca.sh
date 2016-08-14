@@ -51,7 +51,7 @@ Where OPTIONS:
   -p PASSWD     specify klik BCA password using PASSWD
   -r            dry run mode. Print the curl command
   -u USER       specify klik BCA username using USER
-  -v            print the shgrate version
+  -v            print the shbca version
 
 List of available ACTION:
   - login
@@ -178,7 +178,7 @@ bca_do_login()
     [ -z "$BCA_LOGIN_IP" ] && BCA_LOGIN_IP=$( bca_get_ip )
 
     local LOGIN_LOG="Logging in to $BCA_BASE_URL/authentication.do with data"
-    LOGIN_LOG="$LOGIN_LOG username: $BCA_LOGIN_USERNAME, password: ****** "
+    LOGIN_LOG="$LOGIN_LOG username: ******, password: ****** "
     LOGIN_LOG="$LOGIN_LOG ip address: $BCA_LOGIN_IP"
 
     local LOGIN_DATA="--data 'value(user_id)=$BCA_LOGIN_USERNAME'"
@@ -204,7 +204,7 @@ bca_do_login()
         bca_log "Saving login output to $OUTFILE"
 
         cat "$OUTFILE" | bca_is_login_ok && {
-            bca_log "successully login to Klik BCA as $BCA_LOGIN_USERNAME"
+            bca_log "successully login to Klik BCA as *******"
             echo "Logged in to Klik BCA"
             return 0
         }
