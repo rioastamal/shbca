@@ -2,14 +2,13 @@
 #
 # @author Rio Astamal <me@rioastamal.net>
 # @desc Simple Bash script to manage BCA Bank account
-# @version 2016-07-30
 # @require curl binary
 
 # Script name used for logger
 readonly BCA_SCRIPT_NAME=$(basename $0)
 
 # AWS style versioning
-BCA_VERSION="2016-08-14"
+BCA_VERSION="2016-08-17"
 BCA_CONFIG_FILE=""
 
 # Flag for debugging
@@ -58,6 +57,10 @@ List of available ACTION:
   - logout
   - check_balance
   - check_balance_wlogin
+  - check_transaction_history
+  - check_transaction_history_wlogin
+  - cth (alias of check_transaction_history)
+  - cth_wlogin (alias of check_transaction_history_wlogin)
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
@@ -280,6 +283,157 @@ bca_check_balance()
     return 1
 }
 
+# Function to get a date for X days ago for Unix compatible OS
+#
+# @param number NUMBER_OF_DAYS - Get the last X days
+# @return string YYYY-MM-DD
+bca_date_last_xdays_unix()
+{
+    local NUMBER_OF_DAYS=$1
+
+    date -v -${NUMBER_OF_DAYS}d "+%Y-%m-%d"
+}
+
+# Function to get a date for X days ago for Linux compatible OS
+#
+# @param number NUMBER_OF_DAYS - Get the last X days
+# @return string YYYY-MM-DD
+bca_date_last_xdays_linux()
+{
+    local NUMBER_OF_DAYS=$1
+
+    date -d "${NUMBER_OF_DAYS} days ago" "+%Y-%m-%d"
+}
+
+# Function to get a date for X days ago for all OS
+#
+# @param number NUMBER_OF_DAYS - Get the last X days
+# @return string YYYY-MM-DD
+bca_date_last_xdays()
+{
+    local NUMBER_OF_DAYS=$1
+
+    case $OSTYPE in
+        darwin*)
+            bca_date_last_xdays_unix $NUMBER_OF_DAYS
+        ;;
+
+        bsd*)
+            bca_date_last_xdays_unix $NUMBER_OF_DAYS
+        ;;
+
+        solaris*)
+            bca_date_last_xdays_unix $NUMBER_OF_DAYS
+        ;;
+
+        linux*)
+            bca_date_last_xdays_linux $NUMBER_OF_DAYS
+        ;;
+
+        cygwin*)
+            bca_date_last_xdays_linux $NUMBER_OF_DAYS
+        ;;
+
+        *)
+            # Our best bet
+            bca_date_last_xdays_unix $NUMBER_OF_DAYS
+        ;;
+    esac
+}
+
+# Function to print only parts that contains statement in the HTML
+#
+# @param string filename
+# @return string HTML row contents of statements
+bca_parse_html_table_history()
+{
+    local HTML_CONTENTS=$( cat $1 )
+    local BEGIN_LINE=$(( $( echo "$HTML_CONTENTS" | grep -n '<td bgcolor="#e0e0e0" colspan="2"><b>KETERANGAN</td>' | awk -F: '{print $1}' ) + 2 ))
+    local END_LINE=$(( $( echo "$HTML_CONTENTS" | grep -n '<td height="21" valign="top"> TAHAPAN<br />5270813205</td>' | awk -F: '{print $1}' ) - 3 ))
+
+    # Take only the lines which contains statement
+    echo "$HTML_CONTENTS" | sed -n "${BEGIN_LINE},${END_LINE}p"
+}
+
+# Function to parse the statement history to 'table' look alike
+#
+# @param STDIN - The contents of Klik BCA HTML statement page
+# @return string
+bca_print_transaction_history()
+{
+    # sed and awk combo!
+    sed "s@.*<tr bgcolor='.*'><td valign='top'>\(.*\)</td><td>\(.*\)<td valign='top'>\(.*\)</td>@\1--\2--\3@" | \
+    awk -F'--' 'BEGIN {
+        printf("%-5s %-5s %s\n", "TGL", "DB/CR", "KETERANGAN");
+        printf("%-5s %-5s %s\n", "---", "-----", "----------");
+    } {
+        gsub(/[ \t]+$/, "", $1); gsub(/[ \t]+$/, "", $2);
+        printf("%-5s %-5s %s\n", $1, $3, $2);
+        printf("%-5s %-5s %s\n", "---", "-----", "----------");
+    }' | sed $'s/<br>/\\\n            /g'
+}
+
+# Function to check the account transaction history (statements)
+bca_check_transaction_history()
+{
+    bca_log "Checking balance by visiting URL $BCA_BASE_URL/accountstmt.do?value(actions)=acctstmtview"
+
+    local OUTFILE=$BCA_OUTPUT_DIR/curl-post.acctstmtview.do.html
+    local STATEMENT_HEADER="-H \"Referer: $BCA_BASE_URL/accountstmt.do?value(actions)=acct_stmt\""
+    local DATE_NOW=$( bca_date_last_xdays 0 )
+    local DATE_7DAYS_AGO=$( bca_date_last_xdays 7 )
+
+    # Replace the shell separator with "-"
+    local OLD_IFS=$IFS
+    local IFS=-
+
+    # Split the string using IFS
+    set $DATE_7DAYS_AGO
+
+    # It should result in 3 variables $1 for year, $2 for month and $3 for date
+    local BEGIN_DATE=$3
+    local BEGIN_MONTH=$2
+    local BEGIN_YEAR=$1
+
+    set $DATE_NOW
+    local END_DATE=$3
+    local END_MONTH=$2
+    local END_YEAR=$1
+
+    IFS=$OLD_IFS
+
+    local STATEMENT_DATA="--data 'r1=1'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(D1)=0'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(startDt)=$BEGIN_DATE'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(startMt)=$BEGIN_MONTH'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(startYr)=$BEGIN_YEAR'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(endDt)=$END_DATE'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(endMt)=$END_MONTH'"
+    STATEMENT_DATA="$STATEMENT_DATA --data 'value(endYr)=$END_YEAR'"
+
+    local CMD="curl $( bca_build_request POST ) $STATEMENT_DATA $STATEMENT_HEADER '$BCA_BASE_URL/accountstmt.do?value(actions)=acctstmtview' > $OUTFILE"
+
+    bca_log "Executing command -> $CMD"
+
+    [ "$BCA_DRY_DRUN" = "yes" ] && { echo "$CMD"; return 0; }
+
+    eval "$CMD" && {
+        bca_log "Saving statement output to $OUTFILE"
+
+        local STATEMENT_HTML=$( bca_parse_html_table_history $OUTFILE | sed $'s/\r$//' )
+        local STATEMENT_NUMBER=$( echo "$STATEMENT_HTML" | wc -l | awk '{print $1}' )
+
+        bca_log "Found $STATEMENT_NUMBER transaction(s)"
+        echo "Found $STATEMENT_NUMBER transaction(s). Printing the statements..."
+        echo "$STATEMENT_HTML" | bca_print_transaction_history
+
+        return 0
+    }
+
+    bca_err "Failed getting transaction history"
+    return 1
+}
+
 # Parse the arguments
 while getopts a:c:hi:pru:v BCA_OPT;
 do
@@ -343,8 +497,25 @@ case $BCA_ACTION in
     ;;
 
     check_balance_wlogin)
-        bca_do_login
-        bca_check_balance
+        bca_do_login && bca_check_balance
+        bca_do_logout
+    ;;
+
+    check_transaction_history)
+        bca_check_transaction_history
+    ;;
+
+    cth)
+        bca_check_transaction_history
+    ;;
+
+    check_transaction_history_wlogin)
+        bca_do_login && bca_check_transaction_history
+        bca_do_logout
+    ;;
+
+    cth_wlogin)
+        bca_do_login && bca_check_transaction_history
         bca_do_logout
     ;;
 
