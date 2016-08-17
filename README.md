@@ -70,13 +70,14 @@ at http://github.com/astasoft/shbca.
 
 There are few action you can perform using shbca. The list of action are described below.
 
-Action | Description | Prerequisite action
--------|-------------|--------------------
-login  | Login to Klik BCA account | -
-logout | Logout from Klik BCA account | login
-check_balance | Check account balance | login
-check_transaction_history | Get list of transactions history (statement) | login
-check_balance_wlogin | Check account balance with auto login and logout | -
+Action | Description | Prerequisite action | Alias
+-------|-------------|---------------------|------
+login  | Login to Klik BCA account | - | -
+logout | Logout from Klik BCA account | login | -
+check_balance | Check account balance | login | -
+check_balance_wlogin | Check account balance with auto login and logout | - | -
+check_transaction_history | Get list of transactions history (statement) | login | cth
+check_transaction_history_wlogin | Get list of transactions history with auto login and logout | - | cth_wlogin
 
 ### Login to Klik BCA
 
