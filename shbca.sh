@@ -8,7 +8,7 @@
 readonly BCA_SCRIPT_NAME=$(basename $0)
 
 # AWS style versioning
-BCA_VERSION="2016-08-14"
+BCA_VERSION="2016-08-17"
 BCA_CONFIG_FILE=""
 
 # Flag for debugging
@@ -59,8 +59,8 @@ List of available ACTION:
   - check_balance_wlogin
   - check_transaction_history
   - check_transaction_history_wlogin
-  - cth
-  - cth_wlogin
+  - cth (alias of check_transaction_history)
+  - cth_wlogin (alias of check_transaction_history_wlogin)
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
