@@ -15,6 +15,7 @@ shbca require Bash (tested with Bash 3.2.57 on Mac OS X El Capitan) and other sh
 * awk
 * cat
 * curl
+* date
 * grep
 * head
 * sed
