@@ -75,6 +75,7 @@ Action | Description | Prerequisite action
 login  | Login to Klik BCA account | -
 logout | Logout from Klik BCA account | login
 check_balance | Check account balance | login
+check_transaction_history | Get list of transactions history (statement) | login
 check_balance_wlogin | Check account balance with auto login and logout | -
 
 ### Login to Klik BCA
