@@ -12,12 +12,14 @@ shbca advertise itself as iPhone device while connecting to Klik BCA.
 
 shbca require Bash (tested with Bash 3.2.57 on Mac OS X El Capitan) and other shell utilities:
 
+* awk
 * cat
 * curl
 * grep
 * head
 * sed
 * tail
+* wc
 
 Those shell utilities should be available in most Linux distribution and Unix
 compatible OS such as Mac OS X - even Windows using cygwin.
@@ -56,6 +58,10 @@ List of available ACTION:
   - logout
   - check_balance
   - check_balance_wlogin
+  - check_transaction_history
+  - check_transaction_history_wlogin
+  - cth (alias of check_transaction_history)
+  - cth_wlogin (alias of check_transaction_history_wlogin)
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
@@ -105,13 +111,72 @@ Account number: 1234567890. Balance left: 799,989,310.29
 
 ### Checking Account Balance with Auto Login and Logout
 
-This action simplify the process of checking account balance by grouping series of actions into only one. So, you don't have to do login and logout manually.
+This action simplify the process of checking account balance by grouping series of actions into only one. So, you don't have to do login and logout manually. To
+run the action you can use `check_balance_wlogin`.
 
 ```
 $ ./shbca.sh -a check_balance_wlogin -u USERNAME -p -i 8.8.8.8
 Enter Klik BCA Password:
 Logged in to Klik BCA
 Account number: 1234567890. Balance left: 799,989,310.29
+Logged out from Klik BCA
+```
+
+### Checking Transactions History
+
+To check transactions history (statements) you can use `check_transaction_history` action or the alias `cth`. You need to do login action first.
+
+This action will only grab statements from the last 7 days. Example below uses a config file.
+
+```
+$ ./shbca.sh -a check_transaction_history -c ./shbca.config
+Found 3 transaction(s). Printing the statements...
+TGL   DB/CR KETERANGAN
+---   ----- ----------
+10/08 DB    TARIKAN ATM 09/08
+            0000
+            500,000.00
+---   ----- ----------
+15/08 DB    KARTU KREDIT
+            TANGGAL :13/08
+            0100 BCA CARD
+            54131234567890
+            RIO ASTAMAL
+            0000
+            123,345.00
+---   ----- ----------
+15/08 DB    TARIKAN ATM 14/08
+            0000
+            500,000.00
+---   ----- ----------
+```
+
+### Checking Transaction History with Auto Login and Logout
+
+This action simplify checking transactions history by doing the login and logout process automatically. To use it specify `check_transaction_history_wlogin` or `cth_wlogin` for the action. Example below uses a config file.
+
+```
+$ ./shbca.sh -a cth_wlogin -c ./sh-bca.config
+Logged in to Klik BCA
+Found 3 transaction(s). Printing the statements...
+TGL   DB/CR KETERANGAN
+---   ----- ----------
+10/08 DB    TARIKAN ATM 09/08
+            0000
+            500,000.00
+---   ----- ----------
+15/08 DB    KARTU KREDIT
+            TANGGAL :13/08
+            0100 BCA CARD
+            54131234567890
+            RIO ASTAMAL
+            0000
+            123,345.00
+---   ----- ----------
+15/08 DB    TARIKAN ATM 14/08
+            0000
+            500,000.00
+---   ----- ----------
 Logged out from Klik BCA
 ```
 
@@ -174,7 +239,7 @@ $ chmod 0600 shbca.config
 
 ## Todo
 
-- Implements transaction history
+- Implements money transfer between BCA account
 
 ## Author
 
