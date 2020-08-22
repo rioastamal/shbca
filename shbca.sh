@@ -8,7 +8,7 @@
 readonly BCA_SCRIPT_NAME=$(basename $0)
 
 # AWS style versioning
-BCA_VERSION="2016-08-17"
+BCA_VERSION="2020-08-23"
 BCA_CONFIG_FILE=""
 
 # Flag for debugging
@@ -64,7 +64,7 @@ List of available ACTION:
 
 shbca is a command line interface to manage BCA Bank account written in Bash.
 shbca is free software licensed under MIT. Visit the project homepage
-at http://github.com/astasoft/shbca."
+at http://github.com/rioastamal/shbca."
 }
 
 # Function to display message to inform user to see the help
