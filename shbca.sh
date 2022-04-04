@@ -402,7 +402,7 @@ bca_check_transaction_history()
 
     IFS=$OLD_IFS
 
-    local STATEMENT_DATA="--data 'r1=1'"
+    local STATEMENT_DATA="--data 'value(r1)=1'"
     STATEMENT_DATA="$STATEMENT_DATA --data 'value(D1)=0'"
     STATEMENT_DATA="$STATEMENT_DATA --data 'value(startDt)=$BEGIN_DATE'"
     STATEMENT_DATA="$STATEMENT_DATA --data 'value(startMt)=$BEGIN_MONTH'"
@@ -420,7 +420,7 @@ bca_check_transaction_history()
     eval "$CMD" && {
         bca_log "Saving statement output to $OUTFILE"
 
-        local STATEMENT_HTML=$( bca_parse_html_table_history $OUTFILE | sed $'s/\r$//' )
+        local STATEMENT_HTML=$( bca_parse_html_table_history $OUTFILE )
         local STATEMENT_NUMBER=$( echo "$STATEMENT_HTML" | wc -l | awk '{print $1}' )
 
         bca_log "Found $STATEMENT_NUMBER transaction(s)"
